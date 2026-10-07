@@ -16,8 +16,11 @@ interface Session {
 export function createDefaultPlayerData(): PlayerData {
 	return {
 		version: DATA_VERSION,
-		step: 0,
-		noSkipEligible: true,
+		savedCheckpoint: 0,
+		rewardedVideosWatched: 0,
+		rewardedCheckpointsClaimed: 0,
+		saveCredits: 0,
+		recoveryCredits: 0,
 		victories: 0,
 		donationRobux: 0,
 		skipRobux: 0,
@@ -54,8 +57,11 @@ function sanitize(raw: Partial<StoredPlayerData> | undefined): PlayerData {
 	const skipRobux = readCount(raw.skipRobux);
 	return {
 		version: DATA_VERSION,
-		step: math.clamp(readCount(raw.step), 0, GameConfig.MAX_STEP),
-		noSkipEligible: typeIs(raw.noSkipEligible, "boolean") ? raw.noSkipEligible : true,
+		savedCheckpoint: math.clamp(readCount(raw.savedCheckpoint), 0, GameConfig.MAX_STEP - 1),
+		rewardedVideosWatched: readCount(raw.rewardedVideosWatched),
+		rewardedCheckpointsClaimed: readCount(raw.rewardedCheckpointsClaimed),
+		saveCredits: readCount(raw.saveCredits),
+		recoveryCredits: readCount(raw.recoveryCredits),
 		victories: readCount(raw.victories),
 		donationRobux,
 		skipRobux,
@@ -192,7 +198,7 @@ export class DataService {
 			task.spawn(() => this.releasePlayer(player));
 			return;
 		}
-		log.debug(`Loaded ${player.Name} (step ${data.step}, persist=${persist})`);
+		log.debug(`Loaded ${player.Name} (checkpoint ${data.savedCheckpoint}, persist=${persist})`);
 		this.loaded.fire(player);
 	}
 

@@ -31,7 +31,7 @@ export class SkipService {
 
 	private grant(player: Player, receipt: ReceiptInfo, option: SkipOption): boolean {
 		const state = this.progression.getState(player);
-		if (state === undefined) return false; // run not restored yet: Roblox will retry
+		if (state === undefined) return false; // session not started yet: Roblox will retry
 
 		if (receipt.CurrencySpent !== option.priceRobux) {
 			log.warn(`${option.id}: configured price ${option.priceRobux} but receipt says ${receipt.CurrencySpent}`);

@@ -3,6 +3,7 @@ import { addCorner, addStroke } from "./UIHelpers";
 
 const HUD_NAME = "HUD";
 const SIDEBAR_NAME = "SideBar";
+const MENU_NAMES = ["DonateMenu", "CheckpointMenu"];
 
 /** Shared HUD ScreenGui used by the bottom/side controls (created on first use). */
 export function getHudGui(): ScreenGui {
@@ -58,4 +59,14 @@ export function createHudButton(parent: Instance, text: string, size: UDim2): Te
 	addCorner(button, new UDim(0, 10));
 	addStroke(button, Color3.fromRGB(255, 255, 255), 1.5).Transparency = 0.6;
 	return button;
+}
+
+/** Keeps a single HUD menu open at a time. */
+export function closeMenusExcept(openMenuName: string): void {
+	const hud = getHudGui();
+	for (const name of MENU_NAMES) {
+		if (name === openMenuName) continue;
+		const menu = hud.FindFirstChild(name);
+		if (menu !== undefined && menu.IsA("GuiObject")) menu.Visible = false;
+	}
 }

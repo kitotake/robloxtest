@@ -1,12 +1,24 @@
-export const DATA_VERSION = 1;
+export const DATA_VERSION = 2;
 
-/** Everything persisted for a player. Written by the server only. */
+/**
+ * Everything persisted for a player. Written by the server only.
+ *
+ * The live position on the path (currentStep) and the No-Skip state of the run
+ * in progress are deliberately NOT here: they belong to the session and start
+ * from 0 every time the player joins.
+ */
 export interface PlayerData {
 	version: number;
-	/** Current validated position on the 0 → MAX_STEP path. */
-	step: number;
-	/** NO-SKIP state of the run in progress (a run can span several sessions). */
-	noSkipEligible: boolean;
+	/** Persistent checkpoint step (1..MAX_STEP-1). 0 = no checkpoint. Never the live step. */
+	savedCheckpoint: number;
+	/** Rewarded videos watched toward the next checkpoint. */
+	rewardedVideosWatched: number;
+	/** Checkpoints already earned through rewarded videos (selects the next requirement). */
+	rewardedCheckpointsClaimed: number;
+	/** Earned/bought "save" rights not yet turned into a checkpoint. */
+	saveCredits: number;
+	/** Bought "recovery" rights not yet used. */
+	recoveryCredits: number;
 	victories: number;
 	donationRobux: number;
 	skipRobux: number;

@@ -57,8 +57,13 @@ export class PurchasePromptService {
 		}
 		if (productId === undefined) return;
 
+		this.promptProduct(player, productId, `${kind} ${optionId}`);
+	}
+
+	/** Opens the Roblox prompt for a configured product; placeholder IDs are refused with a notice. */
+	promptProduct(player: Player, productId: number, label: string): void {
 		if (!isProductConfigured(productId)) {
-			log.warn(`${kind} ${optionId}: Developer Product ID is still a placeholder`);
+			log.warn(`${label}: Developer Product ID is still a placeholder`);
 			this.notices.send(player, "error", "This purchase isn't available yet.");
 			return;
 		}

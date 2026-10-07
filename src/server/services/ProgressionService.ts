@@ -9,15 +9,18 @@ import { DataService } from "./DataService";
 const log = createLogger("ProgressionService");
 
 /**
- * Single source of truth for every player's position on the 0 → MAX_STEP path.
- * The client only ever receives copies of these values for display. Step and
- * NO-SKIP state are mirrored into the player's persistent data on every change.
+ * Single source of truth for every player's position on the 0 → MAX_STEP path
+ * during the current session. The position (currentStep) and the No-Skip state
+ * live only in memory: every session starts at step 0 and nothing here is
+ * written to the DataStore. The only persistent position is the saved
+ * checkpoint, owned by CheckpointService. Clients only receive copies of these
+ * values for display.
  */
 export class ProgressionService {
 	/** (player, newStep, oldStep, reason) — only for real progression changes. */
 	readonly changed = new Signal<[player: Player, newStep: number, oldStep: number, reason: ProgressChangeReason]>();
-	/** Fired when a player's saved progression has been loaded into a run state. */
-	readonly restored = new Signal<[player: Player]>();
+	/** Fired when a player's session run starts (at step 0, once their data is loaded). */
+	readonly sessionStarted = new Signal<[player: Player]>();
 	/** Fired once when a player reaches MAX_STEP. */
 	readonly runCompleted = new Signal<[player: Player]>();
 
@@ -29,7 +32,7 @@ export class ProgressionService {
 
 	start(): void {
 		this.snapshotRequest.OnServerInvoke = () => this.buildSnapshot();
-		this.data.loaded.connect((player) => this.restorePlayer(player));
+		this.data.loaded.connect((player) => this.startSession(player));
 		Players.PlayerRemoving.Connect((player) => this.states.delete(player));
 	}
 
@@ -70,7 +73,6 @@ export class ProgressionService {
 		}
 
 		state.step = target;
-		this.syncToData(player, state);
 		this.replicate(player, target);
 		this.changed.fire(player, target, old, reason);
 		log.debug(`${player.Name}: ${old} -> ${target} (${reason})`);
@@ -91,7 +93,6 @@ export class ProgressionService {
 		const state = this.states.get(player);
 		if (state === undefined || !state.noSkipEligible) return;
 		state.noSkipEligible = false;
-		this.syncToData(player, state);
 		log.debug(`${player.Name} lost NO-SKIP eligibility (${why})`);
 	}
 
@@ -114,7 +115,6 @@ export class ProgressionService {
 		state.noSkipEligible = true;
 		state.completed = false;
 		state.paused = false;
-		this.syncToData(player, state);
 		this.replicate(player, 0);
 		this.changed.fire(player, 0, old, "Reset");
 	}
@@ -124,28 +124,14 @@ export class ProgressionService {
 		if (state !== undefined) state.paused = paused;
 	}
 
-	/** Builds the run state from the player's saved data (called once their data is loaded). */
-	private restorePlayer(player: Player): void {
-		const saved = this.data.getData(player);
-		if (saved === undefined || this.states.has(player)) return;
+	/** Every session starts a brand-new run at step 0, whatever happened in earlier sessions. */
+	private startSession(player: Player): void {
+		if (this.data.getData(player) === undefined || this.states.has(player)) return;
 
-		const finished = saved.step >= GameConfig.MAX_STEP;
-		this.states.set(player, {
-			step: saved.step,
-			noSkipEligible: saved.noSkipEligible,
-			completed: finished,
-			paused: finished,
-		});
-		this.replicate(player, saved.step);
-		log.debug(`Restored ${player.Name} at step ${saved.step}`);
-		this.restored.fire(player);
-	}
-
-	private syncToData(player: Player, state: RunState): void {
-		const saved = this.data.getData(player);
-		if (saved === undefined) return;
-		saved.step = state.step;
-		saved.noSkipEligible = state.noSkipEligible;
+		this.states.set(player, { step: 0, noSkipEligible: true, completed: false, paused: false });
+		this.replicate(player, 0);
+		log.debug(`Session started for ${player.Name} at step 0`);
+		this.sessionStarted.fire(player);
 	}
 
 	private replicate(player: Player, step: number): void {

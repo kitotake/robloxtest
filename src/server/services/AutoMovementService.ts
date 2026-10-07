@@ -26,8 +26,8 @@ export class AutoMovementService {
 		Players.PlayerRemoving.Connect((player) => this.stepTimers.delete(player));
 		for (const player of Players.GetPlayers()) this.setupPlayer(player);
 
-		// Saved progression has just been loaded: put an already-spawned character on its tile.
-		this.progression.restored.connect((player) => {
+		// The session run has just started: put an already-spawned character on its tile (step 0).
+		this.progression.sessionStarted.connect((player) => {
 			if (GameConfig.RESPAWN.PLACE_AT_PROGRESS) this.placeCharacter(player, this.progression.getProgress(player));
 		});
 
@@ -49,7 +49,7 @@ export class AutoMovementService {
 		const humanoid = character.WaitForChild("Humanoid") as Humanoid;
 		character.WaitForChild("HumanoidRootPart");
 		humanoid.WalkSpeed = getAutoWalkSpeed();
-		// Before the saved progression is loaded there is nothing to place on; `restored` handles that case.
+		// Before the session run starts there is nothing to place on; `sessionStarted` handles that case.
 		if (GameConfig.RESPAWN.PLACE_AT_PROGRESS && this.progression.getState(player) !== undefined) {
 			const step = this.progression.getProgress(player);
 			log.debug(`Placing ${player.Name} at step ${step} on spawn`);

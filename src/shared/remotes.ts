@@ -15,6 +15,12 @@ export const RemoteNames = {
 	RequestPurchase: "RequestPurchase",
 	/** Server → one client: (kind: "info" | "error", text: string) */
 	Notice: "Notice",
+	/** Server → one client: (info: CheckpointInfo) */
+	CheckpointChanged: "CheckpointChanged",
+	/** Client → server: returns the caller's CheckpointInfo */
+	GetCheckpointInfo: "GetCheckpointInfo",
+	/** Client → server: (action: CheckpointAction). Carries no step, price or amount. */
+	CheckpointAction: "CheckpointAction",
 } as const;
 
 function getFolder(): Folder {

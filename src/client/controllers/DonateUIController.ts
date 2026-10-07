@@ -1,6 +1,6 @@
 import { MonetizationConfig } from "shared/config/MonetizationConfig";
 import { getRemoteEvent, RemoteNames } from "shared/remotes";
-import { createHudButton, getHudGui, getSideBar } from "../ui/Hud";
+import { closeMenusExcept, createHudButton, getHudGui, getSideBar } from "../ui/Hud";
 import { addCorner, addStroke } from "../ui/UIHelpers";
 
 /** Donate button (side bar) and its menu. Only sends the chosen option id to the server. */
@@ -14,6 +14,7 @@ export class DonateUIController {
 		donateButton.LayoutOrder = 2;
 		donateButton.Activated.Connect(() => {
 			this.menu.Visible = !this.menu.Visible;
+			if (this.menu.Visible) closeMenusExcept("DonateMenu");
 		});
 
 		this.menu = new Instance("Frame");
