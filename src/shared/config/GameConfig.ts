@@ -18,6 +18,12 @@ export const GameConfig = {
 	/** Disable WASD / thumbstick so the player is moved only by the game. */
 	DISABLE_MANUAL_CONTROLS: true,
 
+	/**
+	 * Once a player reaches MAX_STEP the automatic walk ends: manual controls come
+	 * back and the avatar uses this (normal) walk speed on the final platform.
+	 */
+	FREE_WALK_SPEED: 16,
+
 	PATH: {
 		/** Workspace folder holding the numbered tiles. */
 		FOLDER_NAME: "ProgressPath",

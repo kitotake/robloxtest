@@ -34,7 +34,12 @@ export class AutoMovementService {
 		this.progression.changed.connect((player, newStep, _old, reason) => {
 			this.stepTimers.set(player, 0);
 			if (reason !== "Auto") this.placeCharacter(player, newStep);
+			// A fresh run starts: back to the slow automatic walk.
+			if (reason === "Reset") this.setWalkSpeed(player, getAutoWalkSpeed());
 		});
+
+		// The run is over: the player can walk around the final area at a normal speed.
+		this.progression.runCompleted.connect((player) => this.setWalkSpeed(player, GameConfig.FREE_WALK_SPEED));
 
 		RunService.Heartbeat.Connect((dt) => this.update(dt));
 	}
@@ -48,13 +53,19 @@ export class AutoMovementService {
 	private onCharacterAdded(player: Player, character: Model): void {
 		const humanoid = character.WaitForChild("Humanoid") as Humanoid;
 		character.WaitForChild("HumanoidRootPart");
-		humanoid.WalkSpeed = getAutoWalkSpeed();
+		humanoid.WalkSpeed =
+			this.progression.getState(player)?.completed === true ? GameConfig.FREE_WALK_SPEED : getAutoWalkSpeed();
 		// Before the session run starts there is nothing to place on; `sessionStarted` handles that case.
 		if (GameConfig.RESPAWN.PLACE_AT_PROGRESS && this.progression.getState(player) !== undefined) {
 			const step = this.progression.getProgress(player);
 			log.debug(`Placing ${player.Name} at step ${step} on spawn`);
 			this.placeCharacter(player, step);
 		}
+	}
+
+	private setWalkSpeed(player: Player, speed: number): void {
+		const humanoid = player.Character?.FindFirstChildOfClass("Humanoid");
+		if (humanoid !== undefined) humanoid.WalkSpeed = speed;
 	}
 
 	private placeCharacter(player: Player, step: number): void {

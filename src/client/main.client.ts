@@ -6,6 +6,8 @@ import { NoticeController } from "./controllers/NoticeController";
 import { ProgressUIController } from "./controllers/ProgressUIController";
 import { RubyUIController } from "./controllers/RubyUIController";
 import { SkipUIController } from "./controllers/SkipUIController";
+import { CameraController } from "./controllers/CameraController";
+import { ZoneAtmosphereController } from "./controllers/ZoneAtmosphereController";
 import { CheckpointStore } from "./stores/CheckpointStore";
 import { ProgressStore } from "./stores/ProgressStore";
 import { RubyStore } from "./stores/RubyStore";
@@ -21,6 +23,8 @@ checkpointStore.start();
 friends.start();
 
 new MovementController(progressStore).start();
+new ZoneAtmosphereController(progressStore).start();
+new CameraController().start();
 new ProgressUIController(progressStore, friends).start();
 new NoticeController().start();
 new SkipUIController().start();
