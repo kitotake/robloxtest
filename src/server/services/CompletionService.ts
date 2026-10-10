@@ -10,25 +10,19 @@ import { VictoryService } from "./VictoryService";
 
 const log = createLogger("CompletionService");
 
-interface CompletionWindow {
-	reason: ProgressChangeReason;
-	totalVictories: number | undefined;
-	noSkipEarned: boolean;
-	noSkipFirstTime: boolean;
-	newTitles: string[];
-}
-
 /**
- * The presentation layer around a completed run. It decides nothing: the
- * Victory, the NO-SKIP achievement and the titles are each granted by their own
- * service. This one only gathers what they granted during the completion and
- * sends one summary to the player's screen.
+ * The single owner of a completed run. It is the only subscriber of
+ * `runCompleted` that decides anything: it asks, in a fixed sequence, the
+ * Victory, the NO-SKIP achievement (and, through them, the titles) what they
+ * granted for THIS completion, then sends one summary to the player's screen.
  *
- * It must be started BEFORE VictoryService, NoSkipService and TitleService so
- * that its window is already open when they react to the same completion.
+ * Nothing is accumulated between completions and nothing depends on the order
+ * in which `runCompleted` handlers or services were started: every result is
+ * either returned by the service that granted it, or read as the difference in
+ * the player's unlocked titles before and after the sequence. It still decides
+ * nothing itself: the rules stay in VictoryService, NoSkipService and TitleService.
  */
 export class CompletionService {
-	private readonly windows = new Map<Player, CompletionWindow>();
 	private readonly runCompletedRemote = getRemoteEvent(RemoteNames.RunCompleted);
 
 	constructor(
@@ -39,47 +33,37 @@ export class CompletionService {
 	) {}
 
 	start(): void {
-		this.progression.runCompleted.connect((player, reason) => {
-			this.windows.set(player, {
-				reason,
-				totalVictories: undefined,
-				noSkipEarned: false,
-				noSkipFirstTime: false,
-				newTitles: [],
-			});
-			// Deferred: runs once every service has reacted to this completion.
-			task.defer(() => this.present(player));
-		});
-		this.victories.victoryRecorded.connect((player, total) => {
-			const window = this.windows.get(player);
-			if (window !== undefined) window.totalVictories = total;
-		});
-		this.noSkip.noSkipEarned.connect((player, firstTime) => {
-			const window = this.windows.get(player);
-			if (window === undefined) return;
-			window.noSkipEarned = true;
-			window.noSkipFirstTime = firstTime;
-		});
-		this.titles.titleUnlocked.connect((player, titleId) => {
-			this.windows.get(player)?.newTitles.push(titleId);
-		});
-		Players.PlayerRemoving.Connect((player) => this.windows.delete(player));
+		this.progression.runCompleted.connect((player, reason) => this.onRunCompleted(player, reason));
 	}
 
-	private present(player: Player): void {
-		const window = this.windows.get(player);
-		this.windows.delete(player);
-		// No Victory was counted (admin completion, checkpoint...): nothing to celebrate.
-		if (window === undefined || window.totalVictories === undefined || player.Parent !== Players) return;
+	private onRunCompleted(player: Player, reason: ProgressChangeReason): void {
+		const titlesBefore = this.getUnlockedTitles(player);
+
+		// Explicit sequence. The titles unlocked by the Victory (milestones) and by NO-SKIP (special)
+		// are unlocked synchronously inside these two calls (Signal.fire starts handlers immediately).
+		const totalVictories = this.victories.recordCompletion(player, reason);
+		const noSkip = this.noSkip.evaluateCompletion(player, reason);
+
+		// No Victory was counted (admin completion, checkpoint, repeated announcement...): nothing to celebrate.
+		if (totalVictories === undefined || player.Parent !== Players) return;
+
+		const newTitles: string[] = [];
+		for (const id of this.getUnlockedTitles(player)) {
+			if (!titlesBefore.includes(id)) newTitles.push(id);
+		}
 
 		const result: CompletionResult = {
-			viaSkip: window.reason === "Skip",
-			totalVictories: window.totalVictories,
-			noSkipEarned: window.noSkipEarned,
-			noSkipFirstTime: window.noSkipFirstTime,
-			newTitles: window.newTitles,
+			viaSkip: reason === "Skip",
+			totalVictories,
+			noSkipEarned: noSkip.earned,
+			noSkipFirstTime: noSkip.firstTime,
+			newTitles,
 		};
 		log.debug(`${player.Name}: presenting completion (victory #${result.totalVictories})`);
 		this.runCompletedRemote.FireClient(player, result);
+	}
+
+	private getUnlockedTitles(player: Player): string[] {
+		return this.titles.getInfo(player)?.unlocked ?? [];
 	}
 }

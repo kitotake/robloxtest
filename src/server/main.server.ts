@@ -48,12 +48,11 @@ prompts.start();
 checkpoints.start();
 movement.start();
 playTime.start();
-// Order matters on completion: the presentation window opens first, then the Victory is counted,
-// then NO-SKIP is evaluated (titles react to both), and the summary is sent once all are done.
+// Completion does not depend on the order of these calls: CompletionService is the only subscriber of
+// `runCompleted` and explicitly asks VictoryService, NoSkipService and TitleService what they granted.
 completion.start();
 victories.start();
 titles.start();
-noSkip.start();
 leaderboards.start();
 
 // Last: every `loaded` subscriber above must be connected before players start loading.
