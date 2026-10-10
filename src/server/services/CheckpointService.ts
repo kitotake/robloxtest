@@ -224,7 +224,7 @@ export class CheckpointService {
 
 	/**
 	 * Moves the player forward to the saved checkpoint. The caller has already
-	 * validated and paid. NO-SKIP is invalidated first (configurable rule); the
+	 * validated and paid. NO-SKIP is invalidated first, unconditionally; the
 	 * move goes through ProgressionService, whose "Checkpoint" change makes
 	 * AutoMovementService physically place the character on the checkpoint tile.
 	 */
@@ -233,9 +233,8 @@ export class CheckpointService {
 		if (saved === undefined || saved.savedCheckpoint <= 0) return false;
 		const target = saved.savedCheckpoint;
 
-		if (GameConfig.NO_SKIP_RULES.InvalidateOnCheckpointRecovery) {
-			this.progression.invalidateNoSkip(player, "checkpoint recovery");
-		}
+		// ALWAYS ends NO-SKIP eligibility (not configurable), and does so before the progress is restored.
+		this.progression.invalidateNoSkip(player, "checkpoint recovery");
 		if (!this.progression.setProgress(player, target, "Checkpoint")) return false;
 
 		if (CheckpointConfig.CONSUME_CHECKPOINT_ON_RECOVERY) saved.savedCheckpoint = 0;

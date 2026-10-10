@@ -21,8 +21,8 @@ export class ProgressionService {
 	readonly changed = new Signal<[player: Player, newStep: number, oldStep: number, reason: ProgressChangeReason]>();
 	/** Fired when a player's session run starts (at step 0, once their data is loaded). */
 	readonly sessionStarted = new Signal<[player: Player]>();
-	/** Fired once when a player reaches MAX_STEP. */
-	readonly runCompleted = new Signal<[player: Player]>();
+	/** Fired once per run when a player reaches MAX_STEP, with the reason of the final step. */
+	readonly runCompleted = new Signal<[player: Player, reason: ProgressChangeReason]>();
 
 	private readonly states = new Map<Player, RunState>();
 	private readonly progressChanged = getRemoteEvent(RemoteNames.ProgressChanged);
@@ -77,7 +77,7 @@ export class ProgressionService {
 		this.changed.fire(player, target, old, reason);
 		log.debug(`${player.Name}: ${old} -> ${target} (${reason})`);
 
-		if (target >= GameConfig.MAX_STEP) this.completeRun(player);
+		if (target >= GameConfig.MAX_STEP) this.completeRun(player, reason);
 		return true;
 	}
 
@@ -96,14 +96,17 @@ export class ProgressionService {
 		log.debug(`${player.Name} lost NO-SKIP eligibility (${why})`);
 	}
 
-	/** Marks the run as finished. Rewards/victories hook into `runCompleted` in a later phase. */
-	completeRun(player: Player): void {
+	/**
+	 * Marks the run as finished (once per run) and announces it through `runCompleted`.
+	 * A direct call is an administrative completion, which VictoryService does not count.
+	 */
+	completeRun(player: Player, reason: ProgressChangeReason = "Admin"): void {
 		const state = this.states.get(player);
 		if (state === undefined || state.completed) return;
 		state.completed = true;
 		state.paused = true;
 		log.debug(`${player.Name} completed the run (noSkipEligible=${state.noSkipEligible})`);
-		this.runCompleted.fire(player);
+		this.runCompleted.fire(player, reason);
 	}
 
 	/** Starts a fresh run at step 0 with NO-SKIP eligibility restored. */

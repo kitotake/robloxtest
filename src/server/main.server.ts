@@ -1,9 +1,13 @@
 import { AutoMovementService } from "./services/AutoMovementService";
 import { CheckpointService } from "./services/CheckpointService";
+import { CompletionService } from "./services/CompletionService";
 import { DataService } from "./services/DataService";
 import { DonationService } from "./services/DonationService";
+import { LeaderboardService } from "./services/LeaderboardService";
 import { MapService } from "./services/MapService";
+import { NoSkipService } from "./services/NoSkipService";
 import { NoticeService } from "./services/NoticeService";
+import { PlayTimeService } from "./services/PlayTimeService";
 import { ProgressionService } from "./services/ProgressionService";
 import { PurchasePromptService } from "./services/PurchasePromptService";
 import { PurchaseService } from "./services/PurchaseService";
@@ -11,6 +15,8 @@ import { RewardService } from "./services/RewardService";
 import { RubyService } from "./services/RubyService";
 import { SkipService } from "./services/SkipService";
 import { SupportService } from "./services/SupportService";
+import { TitleService } from "./services/TitleService";
+import { VictoryService } from "./services/VictoryService";
 
 new MapService().build();
 
@@ -26,6 +32,12 @@ const skips = new SkipService(progression, purchases, support, notices);
 const donations = new DonationService(purchases, support, notices);
 const checkpoints = new CheckpointService(data, progression, rubies, rewards, purchases, prompts, notices);
 const movement = new AutoMovementService(progression);
+const playTime = new PlayTimeService(data);
+const victories = new VictoryService(progression, data);
+const leaderboards = new LeaderboardService(data, playTime);
+const titles = new TitleService(data, playTime, notices, victories, support);
+const noSkip = new NoSkipService(progression, titles);
+const completion = new CompletionService(progression, victories, noSkip, titles);
 
 progression.start();
 rubies.start();
@@ -35,6 +47,14 @@ donations.start();
 prompts.start();
 checkpoints.start();
 movement.start();
+playTime.start();
+// Order matters on completion: the presentation window opens first, then the Victory is counted,
+// then NO-SKIP is evaluated (titles react to both), and the summary is sent once all are done.
+completion.start();
+victories.start();
+titles.start();
+noSkip.start();
+leaderboards.start();
 
 // Last: every `loaded` subscriber above must be connected before players start loading.
 data.start();

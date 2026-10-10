@@ -27,7 +27,11 @@ export function createDefaultPlayerData(): PlayerData {
 		supportRobuxTotal: 0,
 		rubies: 0,
 		totalPlayTime: 0,
+		publishedVictories: 0,
+		publishedSupport: 0,
+		publishedPlayTime: 0,
 		unlockedTitles: [],
+		equippedTitle: "",
 		processedReceipts: [],
 	};
 }
@@ -50,6 +54,15 @@ function readStrings(value: unknown): string[] {
 	return result;
 }
 
+/** Same as readStrings, without duplicates (order kept). */
+function readUniqueStrings(value: unknown): string[] {
+	const result: string[] = [];
+	for (const entry of readStrings(value)) {
+		if (!result.includes(entry)) result.push(entry);
+	}
+	return result;
+}
+
 /** Fills missing fields and repairs invalid values from whatever was stored. */
 function sanitize(raw: Partial<StoredPlayerData> | undefined): PlayerData {
 	if (raw === undefined || !typeIs(raw, "table")) return createDefaultPlayerData();
@@ -68,7 +81,11 @@ function sanitize(raw: Partial<StoredPlayerData> | undefined): PlayerData {
 		supportRobuxTotal: donationRobux + skipRobux,
 		rubies: readCount(raw.rubies),
 		totalPlayTime: math.max(0, readNumber(raw.totalPlayTime, 0)),
-		unlockedTitles: readStrings(raw.unlockedTitles),
+		publishedVictories: readCount(raw.publishedVictories),
+		publishedSupport: readCount(raw.publishedSupport),
+		publishedPlayTime: readCount(raw.publishedPlayTime),
+		unlockedTitles: readUniqueStrings(raw.unlockedTitles),
+		equippedTitle: typeIs(raw.equippedTitle, "string") ? raw.equippedTitle : "",
 		processedReceipts: readStrings(raw.processedReceipts),
 	};
 }
@@ -83,6 +100,10 @@ type ClaimResult = { status: "claimed"; data: PlayerData } | { status: "locked" 
 export class DataService {
 	/** Fired once a player's data is loaded and available through getData. */
 	readonly loaded = new Signal<[player: Player]>();
+	/** Fired synchronously just before a player's data is written (autosave, purchase, leave). */
+	readonly beforeSave = new Signal<[player: Player]>();
+	/** Fired once a player's session has been written and removed. */
+	readonly released = new Signal<[player: Player]>();
 
 	private readonly store = DataStoreService.GetDataStore(DATA.STORE_NAME);
 	private readonly sessions = new Map<Player, Session>();
@@ -205,6 +226,7 @@ export class DataService {
 	private write(player: Player, release: boolean, attempts: number): boolean {
 		const session = this.sessions.get(player);
 		if (session === undefined) return false;
+		this.beforeSave.fire(player);
 		if (!session.persist) return true;
 
 		for (let attempt = 1; attempt <= attempts; attempt++) {
@@ -236,6 +258,7 @@ export class DataService {
 		this.write(player, true, DATA.SAVE_ATTEMPTS);
 		this.sessions.delete(player);
 		this.releasing.delete(player);
+		this.released.fire(player);
 	}
 
 	private autosave(dt: number): void {

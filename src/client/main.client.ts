@@ -1,25 +1,31 @@
 import { CheckpointUIController } from "./controllers/CheckpointUIController";
+import { CompletionUIController } from "./controllers/CompletionUIController";
 import { DonateUIController } from "./controllers/DonateUIController";
 import { FriendsController } from "./controllers/FriendsController";
+import { LeaderboardUIController } from "./controllers/LeaderboardUIController";
 import { MovementController } from "./controllers/MovementController";
 import { NoticeController } from "./controllers/NoticeController";
 import { ProgressUIController } from "./controllers/ProgressUIController";
 import { RubyUIController } from "./controllers/RubyUIController";
 import { SkipUIController } from "./controllers/SkipUIController";
+import { TitlesUIController } from "./controllers/TitlesUIController";
 import { CameraController } from "./controllers/CameraController";
 import { ZoneAtmosphereController } from "./controllers/ZoneAtmosphereController";
 import { CheckpointStore } from "./stores/CheckpointStore";
 import { ProgressStore } from "./stores/ProgressStore";
 import { RubyStore } from "./stores/RubyStore";
+import { TitleStore } from "./stores/TitleStore";
 
 const progressStore = new ProgressStore();
 const rubyStore = new RubyStore();
 const checkpointStore = new CheckpointStore();
+const titleStore = new TitleStore();
 const friends = new FriendsController();
 
 progressStore.start();
 rubyStore.start();
 checkpointStore.start();
+titleStore.start();
 friends.start();
 
 new MovementController(progressStore).start();
@@ -31,3 +37,6 @@ new SkipUIController().start();
 new RubyUIController(rubyStore).start();
 new DonateUIController().start();
 new CheckpointUIController(progressStore, checkpointStore).start();
+new LeaderboardUIController().start();
+new TitlesUIController(titleStore).start();
+new CompletionUIController().start();

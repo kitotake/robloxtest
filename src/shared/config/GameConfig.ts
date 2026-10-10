@@ -55,17 +55,6 @@ export const GameConfig = {
 		PLACE_AT_PROGRESS: true,
 	},
 
-	/**
-	 * Rules deciding when a run stops being eligible for NO-SKIP.
-	 * A real, server-accepted backward progression ALWAYS invalidates NO-SKIP
-	 * (not configurable). A rejected backward move, a fall, a death or a normal
-	 * respawn never do.
-	 */
-	NO_SKIP_RULES: {
-		InvalidateOnCheckpointRecovery: true,
-		InvalidateOnSkipPurchase: true,
-	},
-
 	DATA: {
 		/** DataStore name. Bump the suffix only for a deliberate data reset. */
 		STORE_NAME: "PlayerData_v1",

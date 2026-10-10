@@ -25,10 +25,16 @@ export interface PlayerData {
 	/** Always donationRobux + skipRobux. */
 	supportRobuxTotal: number;
 	rubies: number;
-	/** Seconds. Written by a later phase. */
+	/** Seconds spent in the game, credited by PlayTimeService every time the data is saved. */
 	totalPlayTime: number;
-	/** Written by a later phase. */
+	/** Last value written to each global leaderboard, so unchanged values are never rewritten. */
+	publishedVictories: number;
+	publishedSupport: number;
+	publishedPlayTime: number;
+	/** Ids of the titles the player owns (permanent, see TitleConfig). */
 	unlockedTitles: string[];
+	/** Id of the title shown above the player's head. */
+	equippedTitle: string;
 	/** Most recent PurchaseIds already granted (receipt idempotency). */
 	processedReceipts: string[];
 }

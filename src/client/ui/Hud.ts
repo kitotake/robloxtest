@@ -3,7 +3,7 @@ import { addCorner, addStroke } from "./UIHelpers";
 
 const HUD_NAME = "HUD";
 const SIDEBAR_NAME = "SideBar";
-const MENU_NAMES = ["DonateMenu", "CheckpointMenu"];
+const MENU_NAMES = ["DonateMenu", "CheckpointMenu", "LeaderboardMenu", "TitlesMenu"];
 
 /** Shared HUD ScreenGui used by the bottom/side controls (created on first use). */
 export function getHudGui(): ScreenGui {

@@ -21,6 +21,16 @@ export const RemoteNames = {
 	GetCheckpointInfo: "GetCheckpointInfo",
 	/** Client → server: (action: CheckpointAction). Carries no step, price or amount. */
 	CheckpointAction: "CheckpointAction",
+	/** Client → server: (boardId: string) returns a LeaderboardBoard built by the server. */
+	GetLeaderboard: "GetLeaderboard",
+	/** Server → one client: (info: TitleInfo) */
+	TitlesChanged: "TitlesChanged",
+	/** Client → server: returns the caller's TitleInfo */
+	GetTitles: "GetTitles",
+	/** Client → server: (titleId: string). The server only equips a title the player owns. */
+	EquipTitle: "EquipTitle",
+	/** Server → one client: (result: CompletionResult) once, right after a completed run. */
+	RunCompleted: "RunCompleted",
 } as const;
 
 function getFolder(): Folder {

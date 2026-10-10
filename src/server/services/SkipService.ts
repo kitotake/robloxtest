@@ -1,4 +1,3 @@
-import { GameConfig } from "shared/config/GameConfig";
 import { SKIPS, SkipOption } from "shared/config/SkipConfig";
 import { createLogger } from "shared/util/Logger";
 import { Signal } from "shared/util/Signal";
@@ -38,10 +37,9 @@ export class SkipService {
 		}
 
 		const from = state.step;
-		// Invalidate before advancing so a skip that reaches MAX_STEP completes with the right flag.
-		if (GameConfig.NO_SKIP_RULES.InvalidateOnSkipPurchase) {
-			this.progression.invalidateNoSkip(player, `skip purchase ${option.id}`);
-		}
+		// A paid skip ALWAYS ends NO-SKIP eligibility (not configurable). It happens before advancing so
+		// a skip that reaches MAX_STEP completes with the flag already cleared.
+		this.progression.invalidateNoSkip(player, `skip purchase ${option.id}`);
 		this.progression.advancePlayer(player, option.amount, "Skip");
 		this.support.recordSkip(player, option.priceRobux);
 
