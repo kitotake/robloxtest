@@ -3,6 +3,7 @@ import { GameConfig } from "shared/config/GameConfig";
 import { createLogger } from "shared/util/Logger";
 import { getAutoWalkSpeed, getStepSpawnCFrame } from "shared/util/PathUtil";
 import { ProgressionService } from "./ProgressionService";
+import { SpeedModifierService } from "./SpeedModifierService";
 
 const log = createLogger("AutoMovementService");
 
@@ -15,11 +16,19 @@ const log = createLogger("AutoMovementService");
  * or when the progression is changed by the game (skip, reset, ...). A living
  * player is never moved back automatically: falling or dying only affects the
  * avatar, not the progression.
+ *
+ * WalkSpeed is always recomputed from the authoritative state: the base speed
+ * (slow automatic walk, or FREE_WALK_SPEED once the run is completed) times the
+ * temporary modifiers of SpeedModifierService. It is never written from a
+ * remembered value, so no modifier can leave a wrong speed behind.
  */
 export class AutoMovementService {
 	private readonly stepTimers = new Map<Player, number>();
 
-	constructor(private readonly progression: ProgressionService) {}
+	constructor(
+		private readonly progression: ProgressionService,
+		private readonly speedModifiers: SpeedModifierService,
+	) {}
 
 	start(): void {
 		Players.PlayerAdded.Connect((player) => this.setupPlayer(player));
@@ -35,11 +44,12 @@ export class AutoMovementService {
 			this.stepTimers.set(player, 0);
 			if (reason !== "Auto") this.placeCharacter(player, newStep);
 			// A fresh run starts: back to the slow automatic walk.
-			if (reason === "Reset") this.setWalkSpeed(player, getAutoWalkSpeed());
+			if (reason === "Reset") this.applyWalkSpeed(player);
 		});
 
 		// The run is over: the player can walk around the final area at a normal speed.
-		this.progression.runCompleted.connect((player) => this.setWalkSpeed(player, GameConfig.FREE_WALK_SPEED));
+		this.progression.runCompleted.connect((player) => this.applyWalkSpeed(player));
+		this.speedModifiers.changed.connect((player) => this.applyWalkSpeed(player));
 
 		RunService.Heartbeat.Connect((dt) => this.update(dt));
 	}
@@ -53,8 +63,7 @@ export class AutoMovementService {
 	private onCharacterAdded(player: Player, character: Model): void {
 		const humanoid = character.WaitForChild("Humanoid") as Humanoid;
 		character.WaitForChild("HumanoidRootPart");
-		humanoid.WalkSpeed =
-			this.progression.getState(player)?.completed === true ? GameConfig.FREE_WALK_SPEED : getAutoWalkSpeed();
+		humanoid.WalkSpeed = this.getWalkSpeed(player);
 		// Before the session run starts there is nothing to place on; `sessionStarted` handles that case.
 		if (GameConfig.RESPAWN.PLACE_AT_PROGRESS && this.progression.getState(player) !== undefined) {
 			const step = this.progression.getProgress(player);
@@ -63,9 +72,16 @@ export class AutoMovementService {
 		}
 	}
 
-	private setWalkSpeed(player: Player, speed: number): void {
+	/** Base speed for the player's current state, times their temporary modifiers. */
+	private getWalkSpeed(player: Player): number {
+		const completed = this.progression.getState(player)?.completed === true;
+		const base = completed ? GameConfig.FREE_WALK_SPEED : getAutoWalkSpeed();
+		return base * this.speedModifiers.getMultiplier(player);
+	}
+
+	private applyWalkSpeed(player: Player): void {
 		const humanoid = player.Character?.FindFirstChildOfClass("Humanoid");
-		if (humanoid !== undefined) humanoid.WalkSpeed = speed;
+		if (humanoid !== undefined) humanoid.WalkSpeed = this.getWalkSpeed(player);
 	}
 
 	private placeCharacter(player: Player, step: number): void {

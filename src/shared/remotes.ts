@@ -31,6 +31,10 @@ export const RemoteNames = {
 	EquipTitle: "EquipTitle",
 	/** Server → one client: (result: CompletionResult) once, right after a completed run. */
 	RunCompleted: "RunCompleted",
+	/** Server → one client: (message: EventMessage). Cosmetic cue only; no client → server counterpart exists. */
+	EventStateChanged: "EventStateChanged",
+	/** Client → server: read-only. Returns the caller's own running events as EventMessage[]; arguments are ignored. */
+	GetActiveEvents: "GetActiveEvents",
 } as const;
 
 function getFolder(): Folder {

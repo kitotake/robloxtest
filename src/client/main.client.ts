@@ -1,6 +1,7 @@
 import { CheckpointUIController } from "./controllers/CheckpointUIController";
 import { CompletionUIController } from "./controllers/CompletionUIController";
 import { DonateUIController } from "./controllers/DonateUIController";
+import { EventController } from "./controllers/EventController";
 import { FriendsController } from "./controllers/FriendsController";
 import { LeaderboardUIController } from "./controllers/LeaderboardUIController";
 import { MovementController } from "./controllers/MovementController";
@@ -40,3 +41,4 @@ new CheckpointUIController(progressStore, checkpointStore).start();
 new LeaderboardUIController().start();
 new TitlesUIController(titleStore).start();
 new CompletionUIController().start();
+new EventController().start();
