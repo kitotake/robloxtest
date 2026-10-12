@@ -138,7 +138,8 @@ export class LeaderboardService {
 			if (!this.publishing) {
 				this.publishing = true;
 				task.spawn(() => {
-					for (const player of Players.GetPlayers()) this.publishPlayer(player, false);
+					// One player's failure never skips the others, and the flag is always re-armed.
+					for (const player of Players.GetPlayers()) this.publishSafely(player, false);
 					this.publishing = false;
 				});
 			}
@@ -150,6 +151,12 @@ export class LeaderboardService {
 	}
 
 	// ----------------------------------------------------------------- publishing
+
+	/** `publishPlayer` that never throws: an unexpected error is logged and the caller carries on. */
+	private publishSafely(player: Player, leaving: boolean): void {
+		const [ok, err] = pcall(() => this.publishPlayer(player, leaving));
+		if (!ok) log.warn(`Publishing for ${player.Name} failed: ${tostring(err)}`);
+	}
 
 	/**
 	 * Writes the values that changed enough since their last publish. Nothing is
@@ -175,8 +182,8 @@ export class LeaderboardService {
 		for (const player of Players.GetPlayers()) {
 			pending += 1;
 			task.spawn(() => {
-				this.publishPlayer(player, true);
-				pending -= 1;
+				this.publishSafely(player, true);
+				pending -= 1; // always reached, so a failing player cannot hold the shutdown until the deadline
 			});
 		}
 		const deadline = os.clock() + CONFIG.SHUTDOWN_MAX_WAIT_SECONDS;
@@ -189,7 +196,12 @@ export class LeaderboardService {
 	private refreshAll(): void {
 		if (this.refreshing) return;
 		this.refreshing = true;
+		const [ok, err] = pcall(() => this.refreshBoards());
+		this.refreshing = false; // always re-armed, even if reading failed unexpectedly
+		if (!ok) log.warn(`Refreshing the leaderboards failed: ${tostring(err)}`);
+	}
 
+	private refreshBoards(): void {
 		for (const definition of this.definitions) {
 			const [ok, page] = pcall(() => definition.store.GetSortedAsync(false, CONFIG.TOP_COUNT).GetCurrentPage());
 			if (!ok) {
@@ -206,7 +218,6 @@ export class LeaderboardService {
 			this.cache.set(definition.id, entries);
 			this.updatedAt.set(definition.id, os.time());
 		}
-		this.refreshing = false;
 	}
 
 	private resolveName(userId: number): string {
