@@ -1,6 +1,18 @@
 import { MapConfig, ZONES, ZONE_DENSITY, ZoneDef, ZoneId } from "shared/config/MapConfig";
 import { getStepSurfaceCFrame } from "shared/util/PathUtil";
-import { makeBall, makeCloud, makeColumn, makeFolder, makeIsland, makePart, makePillar, makeRing } from "./MapBuilders";
+import {
+	evenStuds,
+	makeCloud,
+	makeColumn,
+	makeCube,
+	makeFolder,
+	makeFrame,
+	makeIsland,
+	makePart,
+	makePillar,
+	makeTree,
+	studs,
+} from "./MapBuilders";
 import { Layer, place, rgb, seeded } from "./PathFrame";
 
 interface BackdropContext {
@@ -16,28 +28,20 @@ interface BackdropContext {
 	index: number;
 }
 
-function tree(parent: Instance, top: Vector3, height: number, leaf: Color3): void {
-	makePillar(parent, "Trunk", top, height, 1.6, rgb(115, 82, 52), Enum.Material.Wood);
-	makeBall(parent, "Leaves", top.add(new Vector3(0, height + 2, 0)), height * 1.2, leaf, Enum.Material.Grass);
-}
-
-/** Ruined arch: two columns, a broken lintel and a fallen block. */
-function ruinArch(parent: Instance, base: Vector3, scale: number, color: Color3, glow: Color3, frame: CFrame): void {
+/** Ruined arch: two square columns of different heights, a lintel and a glowing block. */
+function ruinArch(parent: Instance, base: Vector3, scale: number, color: Color3, glow: Color3): void {
 	for (const side of [-1, 1]) {
-		const bottom = base.add(frame.PointToWorldSpace(new Vector3(side * 7 * scale, 0, 0)).sub(frame.Position));
-		makePillar(parent, "RuinColumn", bottom, (side < 0 ? 22 : 15) * scale, 3 * scale, color, Enum.Material.Slate);
+		const bottom = base.add(new Vector3(side * evenStuds(7 * scale), 0, 0));
+		makePillar(parent, "RuinColumn", bottom, (side < 0 ? 22 : 15) * scale, evenStuds(3 * scale), color);
 	}
 	makePart({
 		name: "RuinLintel",
 		parent,
-		size: new Vector3(10 * scale, 2.4 * scale, 3 * scale),
-		cframe: new CFrame(base.add(new Vector3(0, 22.5 * scale, 0)))
-			.mul(frame.Rotation)
-			.mul(CFrame.Angles(0, 0, 0.12)),
+		size: new Vector3(evenStuds(14 * scale), evenStuds(2.4 * scale), evenStuds(3 * scale)),
+		cframe: new CFrame(base.add(new Vector3(0, 22.5 * scale, 0))),
 		color,
-		material: Enum.Material.Slate,
 	});
-	makeBall(parent, "RuinGlow", base.add(new Vector3(0, 12 * scale, 0)), 3 * scale, glow, Enum.Material.Neon, 0.2);
+	makeCube(parent, "RuinGlow", base.add(new Vector3(0, 12 * scale, 0)), evenStuds(3 * scale), glow, Enum.Material.Neon, 0.2);
 }
 
 // ---- Beginning
@@ -48,7 +52,7 @@ function backBeginning(c: BackdropContext): void {
 	for (let i = 0; i < 4; i++) {
 		const angle = c.rng.NextNumber(0, 2 * math.pi);
 		const dist = c.rng.NextNumber(0, diameter * 0.33);
-		tree(
+		makeTree(
 			c.parent,
 			top.add(new Vector3(math.cos(angle) * dist, 0, math.sin(angle) * dist)),
 			c.rng.NextNumber(7, 12),
@@ -65,18 +69,18 @@ function backSky(c: BackdropContext): void {
 	} else {
 		const diameter = c.rng.NextNumber(30, 46);
 		makeIsland(c.parent, c.centre, diameter, rgb(130, 205, 120), rgb(150, 150, 165));
-		// Waterfall pouring off the island (a long translucent column).
+		// Waterfall pouring off the island (a long translucent block).
 		makePillar(
 			c.parent,
 			"Waterfall",
 			c.centre.sub(new Vector3(diameter * 0.25, 95, 0)),
 			80,
-			5,
+			4,
 			rgb(150, 210, 255),
-			Enum.Material.Glass,
+			undefined,
 			0.45,
 		);
-		tree(c.parent, c.centre.add(new Vector3(-4, 0, 3)), 8, rgb(90, 180, 90));
+		makeTree(c.parent, c.centre.add(new Vector3(-4, 0, 3)), 8, rgb(90, 180, 90));
 	}
 }
 
@@ -84,13 +88,12 @@ function backSky(c: BackdropContext): void {
 function backNeon(c: BackdropContext): void {
 	if (c.index % 3 === 2) {
 		const frame = getStepSurfaceCFrame(c.step);
-		makeRing(
+		makeFrame(
 			c.parent,
 			frame,
 			c.centre,
 			c.rng.NextNumber(22, 32),
-			28,
-			2.4,
+			2,
 			c.index % 2 === 0 ? c.zone.accentColor : rgb(190, 90, 255),
 			Enum.Material.Neon,
 		);
@@ -98,20 +101,20 @@ function backNeon(c: BackdropContext): void {
 	}
 	// Skyline: a cluster of towers with neon bands.
 	for (let i = 0; i < 4; i++) {
-		const height = c.rng.NextNumber(50, 130);
-		const base = c.centre.add(new Vector3(i * 16 - 24, -90, c.rng.NextNumber(-10, 10)));
+		const height = studs(c.rng.NextNumber(50, 130));
+		const base = c.centre.add(new Vector3(i * 16 - 24, -90, c.rng.NextInteger(-10, 10)));
 		const glow = i % 2 === 0 ? c.zone.accentColor : rgb(190, 90, 255);
 		makePart({
 			name: "Tower",
 			parent: c.parent,
-			size: new Vector3(11, height, 11),
+			size: new Vector3(12, height, 12),
 			cframe: new CFrame(base.add(new Vector3(0, height / 2, 0))),
 			color: rgb(22, 22, 46),
 		});
 		makePart({
 			name: "TowerBand",
 			parent: c.parent,
-			size: new Vector3(11.6, 2, 11.6),
+			size: new Vector3(14, 2, 14),
 			cframe: new CFrame(base.add(new Vector3(0, height * 0.6, 0))),
 			color: glow,
 			material: Enum.Material.Neon,
@@ -119,7 +122,7 @@ function backNeon(c: BackdropContext): void {
 		makePart({
 			name: "TowerTop",
 			parent: c.parent,
-			size: new Vector3(11.6, 1.4, 11.6),
+			size: new Vector3(14, 2, 14),
 			cframe: new CFrame(base.add(new Vector3(0, height, 0))),
 			color: glow,
 			material: Enum.Material.Neon,
@@ -130,14 +133,14 @@ function backNeon(c: BackdropContext): void {
 // ---- Storm
 function backStorm(c: BackdropContext): void {
 	if (c.index % 2 === 0) {
-		// Wall of storm clouds.
+		// Wall of storm clouds (large dark cubes).
 		for (let i = 0; i < 5; i++) {
 			const d = c.rng.NextNumber(55, 90);
-			makeBall(
+			makeCube(
 				c.parent,
 				"StormWall",
 				c.centre.add(new Vector3(i * 38 - 76, c.rng.NextNumber(-10, 18), c.rng.NextNumber(-20, 20))),
-				d,
+				evenStuds(d),
 				rgb(46, 52, 66),
 				undefined,
 				0.05,
@@ -145,98 +148,56 @@ function backStorm(c: BackdropContext): void {
 		}
 	} else {
 		// Dark rock spire crowned with a storm crystal.
-		const height = c.rng.NextNumber(80, 140);
+		const height = studs(c.rng.NextNumber(80, 140));
 		const base = c.centre.sub(new Vector3(0, 100, 0));
-		makePillar(c.parent, "Spire", base, height, 16, rgb(48, 54, 68), Enum.Material.Slate);
-		makePillar(
-			c.parent,
-			"SpireTip",
-			base.add(new Vector3(0, height, 0)),
-			22,
-			7,
-			rgb(60, 66, 82),
-			Enum.Material.Slate,
-		);
-		makeBall(
-			c.parent,
-			"SpireGlow",
-			base.add(new Vector3(0, height + 24, 0)),
-			7,
-			rgb(215, 230, 255),
-			Enum.Material.Neon,
-		);
+		makePillar(c.parent, "Spire", base, height, 16, rgb(48, 54, 68));
+		makePillar(c.parent, "SpireTip", base.add(new Vector3(0, height, 0)), 22, 8, rgb(60, 66, 82));
+		makeCube(c.parent, "SpireGlow", base.add(new Vector3(0, height + 26, 0)), 8, rgb(215, 230, 255), Enum.Material.Neon);
 	}
 }
 
 // ---- Danger
 function backDanger(c: BackdropContext): void {
 	if (c.index === 1) {
+		// Volcano: three stacked tiers topped with a lava block.
 		const base = c.centre.sub(new Vector3(0, 120, 0));
-		makePillar(c.parent, "VolcanoBase", base, 70, 120, rgb(55, 36, 32), Enum.Material.Basalt);
-		makePillar(
-			c.parent,
-			"VolcanoMid",
-			base.add(new Vector3(0, 70, 0)),
-			55,
-			66,
-			rgb(62, 40, 34),
-			Enum.Material.Basalt,
-		);
-		makePillar(
-			c.parent,
-			"VolcanoLava",
-			base.add(new Vector3(0, 125, 0)),
-			8,
-			30,
-			rgb(255, 110, 20),
-			Enum.Material.Neon,
-		);
+		makePillar(c.parent, "VolcanoBase", base, 70, 120, rgb(55, 36, 32));
+		makePillar(c.parent, "VolcanoMid", base.add(new Vector3(0, 70, 0)), 55, 66, rgb(62, 40, 34));
+		makePillar(c.parent, "VolcanoLava", base.add(new Vector3(0, 125, 0)), 8, 30, rgb(255, 110, 20), Enum.Material.Neon);
 		return;
 	}
-	const diameter = c.rng.NextNumber(30, 50);
+	const diameter = evenStuds(c.rng.NextNumber(30, 50));
+	const height = evenStuds(diameter * 0.6);
 	makePart({
 		name: "LavaIsland",
 		parent: c.parent,
-		size: new Vector3(diameter, diameter * 0.6, diameter),
+		size: new Vector3(diameter, height, diameter),
 		cframe: new CFrame(c.centre),
 		color: rgb(48, 32, 30),
-		material: Enum.Material.Basalt,
-		shape: Enum.PartType.Ball,
 	});
-	makePillar(
-		c.parent,
-		"LavaFall",
-		c.centre.sub(new Vector3(0, 110, 0)),
-		100,
-		4,
-		rgb(255, 100, 20),
-		Enum.Material.Neon,
-		0.1,
-	);
-	makeBall(
-		c.parent,
-		"LavaPool",
-		c.centre.add(new Vector3(0, diameter * 0.28, 0)),
-		diameter * 0.4,
-		rgb(255, 110, 25),
-		Enum.Material.Neon,
-		0.1,
-	);
+	makePillar(c.parent, "LavaFall", c.centre.sub(new Vector3(0, 110, 0)), 100, 4, rgb(255, 100, 20), Enum.Material.Neon, 0.1);
+	makePart({
+		name: "LavaPool",
+		parent: c.parent,
+		size: new Vector3(evenStuds(diameter * 0.6), 2, evenStuds(diameter * 0.6)),
+		cframe: new CFrame(c.centre.add(new Vector3(0, height / 2 + 1, 0))),
+		color: rgb(255, 110, 25),
+		material: Enum.Material.Neon,
+	});
 }
 
 // ---- Void
 function backVoid(c: BackdropContext): void {
 	const frame = getStepSurfaceCFrame(c.step);
 	if (c.index === 1 || c.index === 5) {
-		// Ringed planet.
-		const d = c.rng.NextNumber(110, 160);
-		makeBall(c.parent, "Planet", c.centre, d, rgb(38, 28, 70), Enum.Material.SmoothPlastic);
-		makeRing(
+		// Square "planet" cube with a flat square frame around it.
+		const d = evenStuds(c.rng.NextNumber(110, 160));
+		makeCube(c.parent, "Planet", c.centre, d, rgb(38, 28, 70));
+		makeFrame(
 			c.parent,
-			frame.mul(CFrame.Angles(0.35, 0, 0.2)),
+			frame,
 			c.centre,
 			d * 0.85,
-			30,
 			2,
 			rgb(170, 110, 255),
 			Enum.Material.Neon,
@@ -247,29 +208,20 @@ function backVoid(c: BackdropContext): void {
 		return;
 	}
 	if (c.index % 2 === 0) {
-		ruinArch(c.parent, c.centre, c.rng.NextNumber(1.2, 1.8), rgb(40, 34, 64), c.zone.accentColor, frame);
+		ruinArch(c.parent, c.centre, c.rng.NextNumber(1.2, 1.8), rgb(40, 34, 64), c.zone.accentColor);
 		return;
 	}
 	for (let i = 0; i < 3; i++) {
 		const size = c.rng.NextNumber(10, 22);
+		const at = c.centre.add(new Vector3(i * 22 - 22, c.rng.NextNumber(-12, 12), c.rng.NextNumber(-12, 12)));
 		makePart({
 			name: "VoidShard",
 			parent: c.parent,
-			size: new Vector3(size * 0.4, size * 1.6, size * 0.4),
-			cframe: new CFrame(
-				c.centre.add(new Vector3(i * 22 - 22, c.rng.NextNumber(-12, 12), c.rng.NextNumber(-12, 12))),
-			).mul(CFrame.Angles(c.rng.NextNumber(0, math.pi), 0, c.rng.NextNumber(0, math.pi))),
+			size: new Vector3(evenStuds(size * 0.4), studs(size * 1.6), evenStuds(size * 0.4)),
+			cframe: new CFrame(at),
 			color: rgb(30, 24, 54),
-			material: Enum.Material.Glass,
 		});
-		makeBall(
-			c.parent,
-			"VoidCore",
-			c.centre.add(new Vector3(i * 22 - 22, 0, 0)),
-			3,
-			c.zone.accentColor,
-			Enum.Material.Neon,
-		);
+		makeCube(c.parent, "VoidCore", c.centre.add(new Vector3(i * 22 - 22, 0, 0)), 4, c.zone.accentColor, Enum.Material.Neon);
 	}
 }
 
@@ -288,8 +240,8 @@ function backFinalApproach(c: BackdropContext): void {
 			c.zone.accentColor,
 		);
 	}
-	makeBall(c.parent, "GoldCore", c.centre.add(new Vector3(0, 7, 0)), 5, c.zone.accentColor, Enum.Material.Neon);
-	makePillar(c.parent, "Beam", c.centre, 260, 2.4, rgb(255, 225, 140), Enum.Material.Neon, 0.75);
+	makeCube(c.parent, "GoldCore", c.centre.add(new Vector3(0, 8, 0)), 6, c.zone.accentColor, Enum.Material.Neon);
+	makePillar(c.parent, "Beam", c.centre, 260, 2, rgb(255, 225, 140), Enum.Material.Neon, 0.75);
 }
 
 const BACKDROPS: Partial<Record<ZoneId, (c: BackdropContext) => void>> = {

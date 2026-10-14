@@ -57,7 +57,7 @@ export const ZONES: readonly ZoneDef[] = [
 		tileColors: [rgb(236, 240, 226), rgb(214, 226, 200)],
 		accentColor: rgb(90, 200, 120),
 		textColor: rgb(60, 100, 70),
-		tileMaterial: Enum.Material.SmoothPlastic,
+		tileMaterial: Enum.Material.Plastic,
 		atmosphere: {
 			clockTime: 13,
 			brightness: 2.5,
@@ -88,7 +88,7 @@ export const ZONES: readonly ZoneDef[] = [
 		tileColors: [rgb(250, 252, 255), rgb(205, 228, 250)],
 		accentColor: rgb(80, 170, 255),
 		textColor: rgb(50, 110, 190),
-		tileMaterial: Enum.Material.SmoothPlastic,
+		tileMaterial: Enum.Material.Plastic,
 		atmosphere: {
 			clockTime: 12,
 			brightness: 3,
@@ -119,7 +119,7 @@ export const ZONES: readonly ZoneDef[] = [
 		tileColors: [rgb(28, 30, 62), rgb(40, 34, 84)],
 		accentColor: rgb(0, 230, 255),
 		textColor: rgb(0, 240, 255),
-		tileMaterial: Enum.Material.SmoothPlastic,
+		tileMaterial: Enum.Material.Plastic,
 		atmosphere: {
 			clockTime: 19.5,
 			brightness: 1.5,
@@ -150,7 +150,7 @@ export const ZONES: readonly ZoneDef[] = [
 		tileColors: [rgb(78, 86, 102), rgb(64, 72, 88)],
 		accentColor: rgb(230, 235, 255),
 		textColor: rgb(225, 232, 250),
-		tileMaterial: Enum.Material.Slate,
+		tileMaterial: Enum.Material.Plastic,
 		atmosphere: {
 			clockTime: 17.5,
 			brightness: 0.8,
@@ -181,7 +181,7 @@ export const ZONES: readonly ZoneDef[] = [
 		tileColors: [rgb(70, 40, 36), rgb(88, 48, 38)],
 		accentColor: rgb(255, 110, 30),
 		textColor: rgb(255, 150, 60),
-		tileMaterial: Enum.Material.Basalt,
+		tileMaterial: Enum.Material.Plastic,
 		atmosphere: {
 			clockTime: 18.4,
 			brightness: 1.8,
@@ -212,7 +212,7 @@ export const ZONES: readonly ZoneDef[] = [
 		tileColors: [rgb(26, 22, 44), rgb(36, 28, 62)],
 		accentColor: rgb(170, 110, 255),
 		textColor: rgb(200, 160, 255),
-		tileMaterial: Enum.Material.Glass,
+		tileMaterial: Enum.Material.Plastic,
 		atmosphere: {
 			clockTime: 24,
 			brightness: 0.5,
@@ -243,7 +243,7 @@ export const ZONES: readonly ZoneDef[] = [
 		tileColors: [rgb(255, 246, 222), rgb(255, 232, 178)],
 		accentColor: rgb(255, 205, 70),
 		textColor: rgb(190, 130, 20),
-		tileMaterial: Enum.Material.Marble,
+		tileMaterial: Enum.Material.Plastic,
 		atmosphere: {
 			clockTime: 30,
 			brightness: 3.5,

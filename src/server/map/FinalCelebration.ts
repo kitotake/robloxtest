@@ -3,13 +3,13 @@ import { MapConfig } from "shared/config/MapConfig";
 import { getStepForwardFlat, getStepPosition } from "shared/util/PathUtil";
 import {
 	addFaceText,
-	makeBall,
 	makeCloud,
+	makeCube,
 	makeEmitterAnchor,
 	makeFolder,
+	makeFrame,
 	makePart,
 	makePillar,
-	makeRing,
 } from "./MapBuilders";
 import { rgb, seeded, Layer } from "./PathFrame";
 
@@ -33,25 +33,23 @@ export function buildFinalCelebration(root: Folder): void {
 		base.PointToWorldSpace(new Vector3(lateral, up, -ahead));
 	const centreAhead = FINAL.PLATFORM_OFFSET;
 
-	// Podium: low gold disc in the middle of the platform (0.6 high, easy to step on).
+	// Podium: low gold square slab in the middle of the platform (0.6 high, easy to step on).
 	makePart({
 		name: "Podium",
 		parent: folder,
-		size: new Vector3(0.6, 22, 22),
-		cframe: new CFrame(at(0, 0.3 - 0.05, centreAhead + 12)).mul(CFrame.Angles(0, 0, math.pi / 2)),
+		size: new Vector3(22, 0.6, 22),
+		cframe: new CFrame(at(0, 0.3 - 0.05, centreAhead + 12)).mul(base.Rotation),
 		color: rgb(255, 232, 150),
-		material: Enum.Material.Marble,
-		shape: Enum.PartType.Cylinder,
 		collide: true,
+		studs: true,
 	});
 	makePart({
 		name: "PodiumGlow",
 		parent: folder,
-		size: new Vector3(0.2, 24, 24),
-		cframe: new CFrame(at(0, 0.1, centreAhead + 12)).mul(CFrame.Angles(0, 0, math.pi / 2)),
+		size: new Vector3(24, 0.2, 24),
+		cframe: new CFrame(at(0, 0.1, centreAhead + 12)).mul(base.Rotation),
 		color: GOLD,
 		material: Enum.Material.Neon,
-		shape: Enum.PartType.Cylinder,
 		transparency: 0.4,
 	});
 
@@ -66,18 +64,17 @@ export function buildFinalCelebration(root: Folder): void {
 	});
 	addFaceText(board, Enum.NormalId.Back, "YOU MADE IT!", rgb(255, 225, 90), rgb(255, 255, 255));
 	for (const side of [-1, 1]) {
-		makePillar(folder, "BoardPost", at(side * 20, 0, boardAhead), 17, 1.6, MARBLE, Enum.Material.Marble);
-		makeBall(folder, "BoardOrb", at(side * 20, 18.5, boardAhead), 2.4, GOLD, Enum.Material.Neon);
+		makePillar(folder, "BoardPost", at(side * 20, 0, boardAhead), 17, 2, MARBLE);
+		makeCube(folder, "BoardOrb", at(side * 20, 19, boardAhead), 2, GOLD, Enum.Material.Neon);
 	}
 
-	// Halo behind the gate board.
-	makeRing(
+	// Halo behind the gate board: a big square frame.
+	makeFrame(
 		folder,
 		base,
 		at(0, FINAL.GATE_HEIGHT + 12, FINAL.GATE_OFFSET + 6),
 		36,
-		32,
-		2.4,
+		2,
 		GOLD,
 		Enum.Material.Neon,
 		"vertical",
@@ -118,16 +115,8 @@ export function buildFinalCelebration(root: Folder): void {
 		const height = rng.NextNumber(70, 200);
 		const pos = centre.add(base.Rotation.PointToWorldSpace(new Vector3(dx * radius, 0, -dz * radius)));
 		const bottom = new Vector3(pos.X, tile.Y - 60, pos.Z);
-		makePillar(
-			folder,
-			"CityTower",
-			bottom,
-			height,
-			rng.NextNumber(12, 20),
-			rgb(255, 240, 200),
-			Enum.Material.Marble,
-		);
-		makeBall(folder, "CityTowerGlow", bottom.add(new Vector3(0, height + 4, 0)), 9, GOLD, Enum.Material.Neon);
+		makePillar(folder, "CityTower", bottom, height, rng.NextNumber(12, 20), rgb(255, 240, 200));
+		makeCube(folder, "CityTowerGlow", bottom.add(new Vector3(0, height + 5, 0)), 10, GOLD, Enum.Material.Neon);
 	}
 
 	// A second layer of clouds, higher than the ones under the platform.

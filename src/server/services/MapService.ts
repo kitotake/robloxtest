@@ -100,7 +100,8 @@ export class MapService {
 		tile.Name = `Tile_${step}`;
 		tile.Anchored = true;
 		tile.Material = zone.tileMaterial;
-		tile.TopSurface = Enum.SurfaceType.Smooth;
+		// Full Stud look: classic studs on the walking surface (texture only: no effect on collisions or physics).
+		tile.TopSurface = Enum.SurfaceType.Studs;
 		tile.BottomSurface = Enum.SurfaceType.Smooth;
 		tile.Size = new Vector3(width, PATH.TILE_THICKNESS, length);
 		tile.CFrame = surface.mul(new CFrame(0, -PATH.TILE_THICKNESS / 2, 0));

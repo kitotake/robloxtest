@@ -4,22 +4,23 @@ import { addFaceText, makeFolder, makePart } from "./MapBuilders";
 
 const rgb = (r: number, g: number, b: number): Color3 => Color3.fromRGB(r, g, b);
 
-/** Chevron "^" lying flat on a tile, pointing along the path. */
-function buildChevron(parent: Instance, tile: CFrame, ahead: number, color: Color3): void {
-	const bars: [Vector3, Vector3][] = [
-		[new Vector3(-1.6, 0, 1.2), new Vector3(0, 0, -1)],
-		[new Vector3(1.6, 0, 1.2), new Vector3(0, 0, -1)],
+/**
+ * Block arrow "↑" lying flat on a tile, pointing along the path: a stem, a
+ * 3-stud head row and a 1-stud tip, all on the 1-stud grid of the tile.
+ */
+function buildArrow(parent: Instance, tile: CFrame, ahead: number, color: Color3): void {
+	const rows: [number, number, number][] = [
+		// width, depth, z offset (towards the front of the tile)
+		[1, 2, ahead - 1],
+		[3, 1, ahead],
+		[1, 1, ahead + 1],
 	];
-	for (const [tail, tip] of bars) {
-		const from = new Vector3(tail.X, 0.12, -ahead + tail.Z);
-		const to = new Vector3(tip.X, 0.12, -ahead + tip.Z);
-		const length = to.sub(from).Magnitude;
-		const centre = from.Lerp(to, 0.5);
+	for (const [width, depth, z] of rows) {
 		makePart({
-			name: "Chevron",
+			name: "Arrow",
 			parent,
-			size: new Vector3(0.6, 0.15, length),
-			cframe: tile.mul(CFrame.lookAt(centre, to)),
+			size: new Vector3(width, 0.2, depth),
+			cframe: tile.mul(new CFrame(0, 0.1, -z)),
 			color,
 			material: Enum.Material.Neon,
 		});
@@ -42,16 +43,15 @@ export function buildSpawnArea(root: Folder): void {
 		size: new Vector3(40, 1, 30),
 		cframe: tile0.mul(new CFrame(0, -0.5, 6 + 15)),
 		color: rgb(120, 195, 100),
-		material: Enum.Material.Grass,
 		collide: true,
+		studs: true,
 	});
 	makePart({
 		name: "StartPlatformRim",
 		parent: folder,
-		size: new Vector3(41, 0.6, 31),
-		cframe: tile0.mul(new CFrame(0, -1.3, 6 + 15)),
+		size: new Vector3(42, 1, 32),
+		cframe: tile0.mul(new CFrame(0, -1.5, 6 + 15)),
 		color: rgb(120, 105, 90),
-		material: Enum.Material.Slate,
 	});
 
 	// Title gate over tile 2.
@@ -60,14 +60,14 @@ export function buildSpawnArea(root: Folder): void {
 		makePart({
 			name: "WelcomePost",
 			parent: folder,
-			size: new Vector3(1.8, 16, 1.8),
+			size: new Vector3(2, 16, 2),
 			cframe: gate.mul(new CFrame(side * 11, 8, 0)),
 			color: rgb(250, 250, 245),
 		});
 		makePart({
 			name: "WelcomePostGlow",
 			parent: folder,
-			size: new Vector3(0.6, 16, 2),
+			size: new Vector3(1, 16, 3),
 			cframe: gate.mul(new CFrame(side * 11, 8, 0)),
 			color: zone.accentColor,
 			material: Enum.Material.Neon,
@@ -76,14 +76,14 @@ export function buildSpawnArea(root: Folder): void {
 	const sign = makePart({
 		name: "WelcomeSign",
 		parent: folder,
-		size: new Vector3(24, 5.5, 1),
-		cframe: gate.mul(new CFrame(0, 16.5, 0)),
+		size: new Vector3(24, 6, 1),
+		cframe: gate.mul(new CFrame(0, 17, 0)),
 		color: rgb(32, 52, 44),
 	});
 	addFaceText(sign, Enum.NormalId.Back, "WAIT UNTIL 100", rgb(255, 255, 255), zone.accentColor);
 
 	// Arrows on the first tiles, between the step number and the next tile.
 	for (let step = 0; step <= 4; step++) {
-		buildChevron(folder, getStepSurfaceCFrame(step), 4.4, zone.accentColor);
+		buildArrow(folder, getStepSurfaceCFrame(step), 3.8, zone.accentColor);
 	}
 }

@@ -2,7 +2,7 @@ import { CollectionService } from "@rbxts/services";
 import { MapConfig, ZONES } from "shared/config/MapConfig";
 import { GameConfig } from "shared/config/GameConfig";
 import { getStepForwardFlat, getStepPosition } from "shared/util/PathUtil";
-import { addFaceText, makeBall, makeCloud, makeFolder, makePart, makePillar } from "./MapBuilders";
+import { addFaceText, makeCloud, makeCube, makeFolder, makeFrame, makePart, makePillar, studs } from "./MapBuilders";
 
 const { MAX_STEP } = GameConfig;
 const { FINAL } = MapConfig;
@@ -31,30 +31,30 @@ export function buildFinalArea(root: Folder): void {
 	const facing = (lateral: number, up: number, ahead: number): CFrame =>
 		new CFrame(at(lateral, up, ahead)).mul(base.Rotation);
 
-	// ---- platform (top 0.05 below tile 100's surface to avoid z-fighting)
+	// ---- platform: square slab (side = former diameter, same centre), top 0.05 below tile 100's surface
 	const platformCentre = at(0, -0.05 - FINAL.PLATFORM_THICKNESS / 2, FINAL.PLATFORM_OFFSET);
 	makePart({
 		name: "FinalPlatform",
 		parent: folder,
-		size: new Vector3(FINAL.PLATFORM_THICKNESS, FINAL.PLATFORM_DIAMETER, FINAL.PLATFORM_DIAMETER),
-		cframe: new CFrame(platformCentre).mul(CFrame.Angles(0, 0, math.pi / 2)),
+		size: new Vector3(FINAL.PLATFORM_DIAMETER, FINAL.PLATFORM_THICKNESS, FINAL.PLATFORM_DIAMETER),
+		cframe: new CFrame(platformCentre).mul(base.Rotation),
 		color: rgb(255, 246, 222),
-		material: Enum.Material.Marble,
-		shape: Enum.PartType.Cylinder,
 		collide: true,
+		studs: true,
 	});
-	makePart({
-		name: "FinalPlatformGlowRing",
-		parent: folder,
-		size: new Vector3(0.4, FINAL.PLATFORM_DIAMETER - 4, FINAL.PLATFORM_DIAMETER - 4),
-		cframe: new CFrame(platformCentre.add(new Vector3(0, FINAL.PLATFORM_THICKNESS / 2 + 0.02, 0))).mul(
-			CFrame.Angles(0, 0, math.pi / 2),
-		),
-		color: GOLD,
-		material: Enum.Material.Neon,
-		shape: Enum.PartType.Cylinder,
-		transparency: 0.55,
-	});
+	// Gold border just inside the edge: a flat neon frame lying on the platform.
+	makeFrame(
+		folder,
+		base,
+		platformCentre.add(new Vector3(0, FINAL.PLATFORM_THICKNESS / 2 + 0.1, 0)),
+		FINAL.PLATFORM_DIAMETER / 2 - 2,
+		1,
+		GOLD,
+		Enum.Material.Neon,
+		"flat",
+		0.55,
+		"FinalPlatformGlowRing",
+	);
 
 	// ---- gate
 	const gateAhead = FINAL.GATE_OFFSET;
@@ -62,15 +62,14 @@ export function buildFinalArea(root: Folder): void {
 		makePart({
 			name: "GatePillar",
 			parent: folder,
-			size: new Vector3(5, FINAL.GATE_HEIGHT, 5),
+			size: new Vector3(6, FINAL.GATE_HEIGHT, 6),
 			cframe: facing(side * FINAL.GATE_HALF_WIDTH, FINAL.GATE_HEIGHT / 2, gateAhead),
 			color: MARBLE,
-			material: Enum.Material.Marble,
 		});
 		makePart({
 			name: "GatePillarGlow",
 			parent: folder,
-			size: new Vector3(1.2, FINAL.GATE_HEIGHT, 5.4),
+			size: new Vector3(2, FINAL.GATE_HEIGHT, 8),
 			cframe: facing(side * FINAL.GATE_HALF_WIDTH, FINAL.GATE_HEIGHT / 2, gateAhead),
 			color: GOLD,
 			material: Enum.Material.Neon,
@@ -79,54 +78,47 @@ export function buildFinalArea(root: Folder): void {
 	makePart({
 		name: "GateBeam",
 		parent: folder,
-		size: new Vector3(FINAL.GATE_HALF_WIDTH * 2 + 5, 5, 5),
-		cframe: facing(0, FINAL.GATE_HEIGHT + 2.5, gateAhead),
+		size: new Vector3(FINAL.GATE_HALF_WIDTH * 2 + 6, 6, 6),
+		cframe: facing(0, FINAL.GATE_HEIGHT + 3, gateAhead),
 		color: MARBLE,
-		material: Enum.Material.Marble,
 	});
 	makePart({
 		name: "GateBeamGlow",
 		parent: folder,
-		size: new Vector3(FINAL.GATE_HALF_WIDTH * 2 + 5.4, 1, 5.4),
-		cframe: facing(0, FINAL.GATE_HEIGHT + 5, gateAhead),
+		size: new Vector3(FINAL.GATE_HALF_WIDTH * 2 + 6, 1, 8),
+		cframe: facing(0, FINAL.GATE_HEIGHT + 6, gateAhead),
 		color: GOLD,
 		material: Enum.Material.Neon,
 	});
 
-	// ---- portal: glowing disc + ring of 20 neon segments
+	// ---- portal: glowing square pane + square frame of neon bars
 	const portalUp = 16;
 	const portalRadius = 13;
 	const portal = makePart({
 		name: "Portal",
 		parent: folder,
-		size: new Vector3(0.8, portalRadius * 2, portalRadius * 2),
-		cframe: facing(0, portalUp, gateAhead).mul(CFrame.Angles(0, math.pi / 2, 0)),
+		size: new Vector3(portalRadius * 2, portalRadius * 2, 1),
+		cframe: facing(0, portalUp, gateAhead),
 		color: rgb(255, 240, 190),
 		material: Enum.Material.Neon,
-		shape: Enum.PartType.Cylinder,
 		transparency: 0.35,
 	});
 	portal.SetAttribute("FinalPortal", true);
 	portal.SetAttribute("Step", MAX_STEP);
 	CollectionService.AddTag(portal, FINAL_PORTAL_TAG);
 
-	const segments = 20;
-	for (let i = 0; i < segments; i++) {
-		const angle = (i / segments) * 2 * math.pi;
-		const offset = new Vector3(
-			math.cos(angle) * (portalRadius + 1.2),
-			portalUp + math.sin(angle) * (portalRadius + 1.2),
-			0,
-		);
-		makePart({
-			name: "PortalRing",
-			parent: folder,
-			size: new Vector3(3.4, 2.2, 2.2),
-			cframe: facing(offset.X, offset.Y, gateAhead).mul(CFrame.Angles(0, 0, angle + math.pi / 2)),
-			color: GOLD,
-			material: Enum.Material.Neon,
-		});
-	}
+	makeFrame(
+		folder,
+		base,
+		at(0, portalUp, gateAhead),
+		portalRadius + 1,
+		2,
+		GOLD,
+		Enum.Material.Neon,
+		"vertical",
+		0,
+		"PortalRing",
+	);
 
 	// Particles + light: the only emitters/lights of the whole area.
 	const sparkAnchor = makePart({
@@ -159,7 +151,6 @@ export function buildFinalArea(root: Folder): void {
 		size: new Vector3(46, 22, 2),
 		cframe: facing(0, FINAL.GATE_HEIGHT + 19, gateAhead),
 		color: rgb(40, 30, 10),
-		material: Enum.Material.SmoothPlastic,
 	});
 	addFaceText(board, Enum.NormalId.Back, "100", rgb(255, 215, 70), rgb(255, 255, 255));
 
@@ -170,8 +161,8 @@ export function buildFinalArea(root: Folder): void {
 		const ahead = FINAL.PLATFORM_OFFSET + math.sin(angle) * 44;
 		if (ahead < 8) continue;
 		const spireBase = at(lateral, 0, ahead);
-		makePillar(folder, "Spire", spireBase, 26, 4, MARBLE, Enum.Material.Marble);
-		makeBall(folder, "SpireOrb", spireBase.add(new Vector3(0, 28.5, 0)), 4, GOLD, Enum.Material.Neon);
+		makePillar(folder, "Spire", spireBase, 26, 4, MARBLE);
+		makeCube(folder, "SpireOrb", spireBase.add(new Vector3(0, 28, 0)), 4, GOLD, Enum.Material.Neon);
 	}
 
 	// ---- light beams in the corners
@@ -184,7 +175,7 @@ export function buildFinalArea(root: Folder): void {
 		makePart({
 			name: "LightBeam",
 			parent: folder,
-			size: new Vector3(3, 420, 3),
+			size: new Vector3(4, 420, 4),
 			cframe: new CFrame(at(lateral, 200, ahead)),
 			color: GOLD,
 			material: Enum.Material.Neon,
@@ -232,7 +223,7 @@ function buildTeaser(
 	makePart({
 		name: "TeaserPath",
 		parent: teaser,
-		size: new Vector3(10, 0.4, distance - 88),
+		size: new Vector3(10, 0.4, studs(distance - 88)),
 		cframe: facing(0, -0.3, 88 + (distance - 88) / 2),
 		color: accent,
 		material: Enum.Material.Neon,
@@ -245,7 +236,6 @@ function buildTeaser(
 		size: new Vector3(64, 96, 6),
 		cframe: facing(0, 40, distance),
 		color: rgb(14, 12, 24),
-		material: Enum.Material.SmoothPlastic,
 	});
 	addFaceText(monolith, Enum.NormalId.Back, "COMING SOON", rgb(255, 255, 255), rgb(160, 110, 255));
 	makePart({
